@@ -42,3 +42,11 @@ def test_is_docker_unavailable(mocker):
     config = Config(sandbox=SandboxConfig())
     manager = DockerManager(config)
     assert manager.is_available() is False
+
+
+def test_image_builder_is_not_built_by_default(mocker):
+    mock_docker = mocker.patch("docker.from_env")
+    mock_docker.return_value.images.get.side_effect = Exception("Image not found")
+    from toolforge.sandbox.image_builder import ImageBuilder
+    builder = ImageBuilder()
+    assert builder.is_built() is False
