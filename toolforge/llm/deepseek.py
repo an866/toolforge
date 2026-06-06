@@ -10,6 +10,10 @@ from toolforge.exceptions import LLMError
 class DeepSeekAdapter(LLMAdapter):
     """DeepSeek V4 Pro API 适配器（兼容 OpenAI 格式）。"""
 
+    def __init__(self, model, api_key, base_url, timeout=60, max_retries=3):
+        super().__init__(model, api_key, base_url, timeout)
+        self.max_retries = max_retries
+
     async def chat(
         self,
         messages: list[dict[str, Any]],
@@ -34,23 +38,27 @@ class DeepSeekAdapter(LLMAdapter):
             body["tool_choice"] = tool_choice
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            for attempt in range(3):
+            for attempt in range(self.max_retries):
                 try:
                     resp = await client.post(
-                        f"{self.base_url}/chat/completions",
+                        f"{self.base_url.rstrip('/')}/chat/completions",
                         headers=headers,
                         json=body,
                     )
                     resp.raise_for_status()
                     return resp.json()
                 except httpx.HTTPStatusError as e:
-                    if attempt == 2:
+                    if e.response.status_code < 500 and e.response.status_code != 429:
                         raise LLMError(
-                            f"DeepSeek API error after 3 retries: {e.response.text}"
+                            f"DeepSeek API error: {e.response.text}"
+                        ) from e
+                    if attempt == self.max_retries - 1:
+                        raise LLMError(
+                            f"DeepSeek API error after {self.max_retries} retries: {e.response.text}"
                         )
                     await asyncio.sleep(2 ** attempt)
                 except httpx.RequestError as e:
-                    if attempt == 2:
+                    if attempt == self.max_retries - 1:
                         raise LLMError(f"DeepSeek connection error: {e}")
                     await asyncio.sleep(2 ** attempt)
 
@@ -83,12 +91,27 @@ class DeepSeekAdapter(LLMAdapter):
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            raise LLMError(f"Failed to parse structured output as JSON: {e}")
+            raise LLMError(
+                f"Failed to parse structured output as JSON: {e}\n"
+                f"Raw content (first 500 chars): {content[:500]}"
+            )
 
 
 def _strip_json_fence(text: str) -> str:
-    """移除 ```json ... ``` 包裹。"""
+    """移除 ```json ... ``` 包裹，支持多行和行内格式。"""
     text = text.strip()
+    # 行内格式: ```json{...}```
+    if text.startswith("```") and text.endswith("```") and "\n" not in text:
+        # 找到 JSON 内容的起始位置
+        brace_idx = text.find("{")
+        if brace_idx != -1:
+            inner = text[brace_idx:]
+        else:
+            inner = text
+        if inner.endswith("```"):
+            inner = inner[:-3]
+        return inner.strip()
+    # 多行格式
     if text.startswith("```"):
         lines = text.split("\n")
         if lines[0].startswith("```"):
