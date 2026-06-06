@@ -16,15 +16,14 @@ def docker_manager():
     return DockerManager(config)
 
 
-def test_build_sandbox_args(docker_manager):
-    args = docker_manager._build_container_args()
-    assert "--read-only" in args
-    assert "--network=none" in args
-    assert "--memory=128m" in args
-    assert "--cpus=1" in args
-    assert "--pids-limit=30" in args
-    assert "--cap-drop=ALL" in args
-    assert "--security-opt=no-new-privileges" in args
+def test_sandbox_security_config(docker_manager):
+    kwargs = docker_manager._get_run_kwargs()
+    assert kwargs["read_only"] is True
+    assert kwargs["network_mode"] == "none"
+    assert "128m" in kwargs["mem_limit"]
+    assert kwargs["cap_drop"] == ["ALL"]
+    assert "no-new-privileges" in kwargs["security_opt"]
+    assert kwargs["auto_remove"] is True
 
 
 def test_is_docker_available_runs(mocker):

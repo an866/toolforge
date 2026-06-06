@@ -25,22 +25,6 @@ class DockerManager:
         except Exception:
             return False
 
-    def _build_container_args(self) -> list[str]:
-        """构建 Docker run 参数列表。"""
-        return [
-            "--rm",
-            "--read-only",
-            "--network=none",
-            f"--memory={self._config.sandbox.memory_limit_mb}m",
-            f"--memory-swap={self._config.sandbox.memory_limit_mb}m",
-            f"--cpus={int(self._config.sandbox.cpu_limit)}",
-            f"--pids-limit={self._config.sandbox.pids_limit}",
-            "--tmpfs", "/tmp:size=64m,noexec",
-            "--cap-drop=ALL",
-            "--security-opt=no-new-privileges",
-            "--ulimit", "nofile=64",
-        ]
-
     async def execute(
         self,
         tool_code: str,
@@ -56,6 +40,7 @@ class DockerManager:
 
             timeout = self._config.sandbox.timeout_seconds
             docker = self._get_docker()
+            container = None
 
             try:
                 container = docker.containers.run(
@@ -64,6 +49,7 @@ class DockerManager:
                     volumes={str(tmp): {"bind": "/code", "mode": "ro"}},
                     working_dir="/code",
                     detach=True,
+                    auto_remove=True,
                     **self._get_run_kwargs(),
                 )
 
@@ -81,8 +67,6 @@ class DockerManager:
                         "error": "Failed to parse test results",
                     }
 
-                container.remove(force=True)
-
                 return {
                     "success": test_result.get("passed", False),
                     "exit_code": result.get("StatusCode", -1),
@@ -96,6 +80,12 @@ class DockerManager:
                 if any(kw in str(e).lower() for kw in timeout_keywords):
                     raise SandboxTimeoutError(f"Sandbox execution timed out: {e}")
                 raise SandboxError(f"Sandbox execution failed: {e}", stderr=str(e))
+            finally:
+                if container is not None:
+                    try:
+                        container.remove(force=True)
+                    except Exception:
+                        pass  # Best effort cleanup
 
     def _get_run_kwargs(self) -> dict:
         return {
@@ -109,6 +99,7 @@ class DockerManager:
             "cap_drop": ["ALL"],
             "security_opt": ["no-new-privileges"],
             "ulimits": [{"name": "nofile", "soft": 64, "hard": 64}],
+            "auto_remove": True,
         }
 
     async def verify_sandbox(self) -> bool:
