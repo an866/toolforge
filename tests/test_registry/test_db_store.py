@@ -79,3 +79,49 @@ async def test_log_execution(db):
     stats = await db.get_tool_stats(record.id)
     assert stats["total_calls"] == 1
     assert stats["success_rate"] == 1.0
+
+
+@pytest.mark.asyncio
+async def test_get_tool_by_name(db):
+    record = ToolRecord(
+        meta=ToolMeta(name="named_tool", description="named", category="test"),
+        code="code",
+        test_code="test",
+    )
+    await db.insert_tool(record)
+    result = await db.get_tool_by_name("named_tool")
+    assert result is not None
+    assert result["name"] == "named_tool"
+
+
+@pytest.mark.asyncio
+async def test_get_nonexistent_tool(db):
+    result = await db.get_tool("nonexistent-id")
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_stats_for_zero_executions(db):
+    record = ToolRecord(
+        meta=ToolMeta(name="untouched", description="desc", category="test"),
+        code="code",
+        test_code="test",
+    )
+    await db.insert_tool(record)
+    stats = await db.get_tool_stats(record.id)
+    assert stats["total_calls"] == 0
+    assert stats["success_rate"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_update_tool_status(db):
+    record = ToolRecord(
+        meta=ToolMeta(name="status_test", description="desc", category="test"),
+        code="code",
+        test_code="test",
+    )
+    await db.insert_tool(record)
+    from toolforge.registry.models import ToolStatus
+    await db.update_tool_status(record.id, ToolStatus.DEPRECATED)
+    result = await db.get_tool(record.id)
+    assert result["status"] == "deprecated"

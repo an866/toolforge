@@ -16,6 +16,7 @@ class DBStore:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = await aiosqlite.connect(self.db_path)
         self._conn.row_factory = aiosqlite.Row
+        await self._conn.execute("PRAGMA foreign_keys = ON")
         await self._conn.executescript("""
             CREATE TABLE IF NOT EXISTS tools (
                 id TEXT PRIMARY KEY,
@@ -52,6 +53,13 @@ class DBStore:
             );
         """)
         await self._conn.commit()
+        await self._conn.executescript("""
+            CREATE INDEX IF NOT EXISTS idx_executions_tool_id ON executions(tool_id);
+            CREATE INDEX IF NOT EXISTS idx_security_log_tool_id ON security_log(tool_id);
+            CREATE INDEX IF NOT EXISTS idx_tools_category ON tools(category);
+            CREATE INDEX IF NOT EXISTS idx_tools_status ON tools(status);
+        """)
+        await self._conn.commit()
 
     async def close(self):
         if self._conn:
@@ -63,8 +71,16 @@ class DBStore:
         )
         return [row[0] for row in await cursor.fetchall()]
 
+    async def _execute_write(self, query: str, params: tuple = ()) -> None:
+        try:
+            await self._conn.execute(query, params)
+            await self._conn.commit()
+        except Exception:
+            await self._conn.rollback()
+            raise
+
     async def insert_tool(self, record: ToolRecord) -> None:
-        await self._conn.execute(
+        await self._execute_write(
             """INSERT OR REPLACE INTO tools
                (id, name, version, description, category, source, status,
                 dependencies, usage_example, created_at, updated_at)
@@ -83,7 +99,6 @@ class DBStore:
                 record.meta.updated_at.isoformat(),
             ),
         )
-        await self._conn.commit()
 
     async def get_tool(self, tool_id: str) -> dict | None:
         cursor = await self._conn.execute("SELECT * FROM tools WHERE id = ?", (tool_id,))
@@ -118,14 +133,13 @@ class DBStore:
         return [dict(row) for row in await cursor.fetchall()]
 
     async def update_tool_status(self, tool_id: str, status: ToolStatus) -> None:
-        await self._conn.execute(
-            "UPDATE tools SET status = ? WHERE id = ?",
-            (status.value, tool_id),
+        await self._execute_write(
+            "UPDATE tools SET status = ?, updated_at = ? WHERE id = ?",
+            (status.value, datetime.now().isoformat(), tool_id),
         )
-        await self._conn.commit()
 
     async def log_execution(self, record: ExecutionRecord) -> None:
-        await self._conn.execute(
+        await self._execute_write(
             """INSERT INTO executions (id, tool_id, task_id, success,
                execution_time_ms, sandbox_id, error_message, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -140,7 +154,6 @@ class DBStore:
                 record.created_at.isoformat(),
             ),
         )
-        await self._conn.commit()
 
     async def get_tool_stats(self, tool_id: str) -> dict:
         cursor = await self._conn.execute(
@@ -158,8 +171,7 @@ class DBStore:
         }
 
     async def log_security_event(self, tool_id: str, event_type: str, detail: str) -> None:
-        await self._conn.execute(
+        await self._execute_write(
             "INSERT INTO security_log (id, tool_id, event_type, detail, created_at) VALUES (?, ?, ?, ?, ?)",
             (str(uuid.uuid4()), tool_id, event_type, detail, datetime.now().isoformat()),
         )
-        await self._conn.commit()
