@@ -38,6 +38,7 @@ async def test_add_and_search_tool(registry):
     results = await registry.search("HTTP请求")
     assert len(results) > 0
     assert results[0].name == "http_client"
+    assert results[0].id == record.id  # ID matches
 
 
 @pytest.mark.asyncio

@@ -19,6 +19,7 @@ def test_save_and_load_tool(temp_dir):
     store.save(record)
 
     loaded = store.load("hello_world")
+    assert loaded.id == record.id  # ID should be preserved
     assert loaded.name == "hello_world"
     assert loaded.code == "def hello():\n    return 'hello'"
     assert loaded.test_code == "def test_hello():\n    assert hello() == 'hello'"

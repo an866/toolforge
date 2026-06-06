@@ -28,6 +28,7 @@ class FileStore:
             (tmpdir / "tool.py").write_text(record.code, encoding="utf-8")
             (tmpdir / "test_tool.py").write_text(record.test_code, encoding="utf-8")
             meta_dict = record.meta.model_dump(mode="json")
+            meta_dict["id"] = record.id  # Persist the ID
             (tmpdir / "meta.yaml").write_text(
                 yaml.dump(meta_dict, default_flow_style=False, allow_unicode=True),
                 encoding="utf-8",
@@ -59,11 +60,11 @@ class FileStore:
             meta_dict = yaml.safe_load(
                 (tool_dir / "meta.yaml").read_text(encoding="utf-8")
             )
-            return ToolRecord(
-                meta=ToolMeta(**meta_dict),
-                code=code,
-                test_code=test_code,
-            )
+            record_id = meta_dict.pop("id", None)
+            kwargs = {"meta": ToolMeta(**meta_dict), "code": code, "test_code": test_code}
+            if record_id:
+                kwargs["id"] = record_id
+            return ToolRecord(**kwargs)
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Tool at {tool_dir} is incomplete or corrupted: {e}")
         except (yaml.YAMLError, Exception) as e:
