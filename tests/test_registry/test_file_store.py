@@ -50,6 +50,27 @@ def test_list_tools_by_category(temp_dir):
     assert "tool_0" in names
 
 
+def test_list_tools_without_category(temp_dir):
+    store = FileStore(str(temp_dir))
+    for i in range(2):
+        record = ToolRecord(
+            meta=ToolMeta(
+                name=f"global_{i}",
+                description=f"Tool {i}",
+                category=f"cat_{i}",
+                source=ToolSource.AUTO,
+            ),
+            code=f"def global_{i}(): pass",
+            test_code=f"def test_global_{i}(): pass",
+        )
+        store.save(record)
+
+    names = store.list_tools()
+    assert len(names) == 2
+    assert "global_0" in names
+    assert "global_1" in names
+
+
 def test_delete_tool(temp_dir):
     store = FileStore(str(temp_dir))
     record = ToolRecord(
@@ -58,6 +79,7 @@ def test_delete_tool(temp_dir):
         test_code="pass",
     )
     store.save(record)
-    store.delete("temp_tool", "test")
+    assert store.delete("temp_tool", "test") is True
+    assert store.delete("temp_tool", "test") is False  # already gone
     with pytest.raises(FileNotFoundError):
         store.load("temp_tool", "test")
