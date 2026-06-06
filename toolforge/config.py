@@ -1,7 +1,14 @@
 """ToolForge 配置管理。"""
+import os
+import re
+import threading
 from pathlib import Path
+
+import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from toolforge.exceptions import ConfigError
 
 
 class LLMConfig(BaseSettings):
@@ -53,26 +60,39 @@ class Config(BaseSettings):
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "Config":
-        import yaml
-        with open(path) as f:
-            data = yaml.safe_load(f) or {}
+        try:
+            with open(path) as f:
+                raw = f.read()
+        except (FileNotFoundError, PermissionError, OSError) as e:
+            raise ConfigError(f"Cannot read config file '{path}': {e}")
+
+        # Expand ${VAR} patterns
+        def expand_env(match):
+            return os.environ.get(match.group(1), match.group(0))
+
+        raw = re.sub(r'\$\{(\w+)\}', expand_env, raw)
+        data = yaml.safe_load(raw) or {}
         return cls(**data)
 
 
 _config: Config | None = None
+_lock = threading.Lock()
 
 
 def get_config() -> Config:
     global _config
     if _config is None:
-        _config = Config()
+        with _lock:
+            if _config is None:  # double-check
+                _config = Config()
     return _config
 
 
 def init_config(config_or_path: Config | str | Path) -> Config:
     global _config
-    if isinstance(config_or_path, Config):
-        _config = config_or_path
-    else:
-        _config = Config.from_yaml(config_or_path)
+    with _lock:
+        if isinstance(config_or_path, Config):
+            _config = config_or_path
+        else:
+            _config = Config.from_yaml(config_or_path)
     return _config

@@ -15,9 +15,9 @@ class ToolGenerationError(ToolForgeError):
 
 class StaticCheckError(ToolForgeError):
     """静态安全检查未通过。"""
-    def __init__(self, message: str, violations: list[str]):
+    def __init__(self, message: str, violations: list[str] | None = None):
         super().__init__(message)
-        self.violations = violations
+        self.violations = violations or []
 
 
 class SandboxError(ToolForgeError):
