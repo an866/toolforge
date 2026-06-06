@@ -20,6 +20,7 @@ class ToolRegistry:
 
     async def close(self):
         await self._db.close()
+        self._vector.close()
 
     async def add_tool(self, record: ToolRecord) -> None:
         """添加工具到三层存储。"""

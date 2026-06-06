@@ -30,13 +30,33 @@ class DockerManager:
         tool_code: str,
         test_code: str,
         metadata: dict,
+        tool_args: dict | None = None,
     ) -> dict:
         """在沙盒中执行工具代码和测试代码。"""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             (tmp / "tool.py").write_text(tool_code, encoding="utf-8")
             (tmp / "test_tool.py").write_text(test_code, encoding="utf-8")
-            (tmp / "run_tests.py").write_text(_RUNNER_SCRIPT, encoding="utf-8")
+
+            if tool_args:
+                func_name = tool_args.get("function", "main")
+                func_args = tool_args.get("args", [])
+                func_kwargs = tool_args.get("kwargs", {})
+                main_script = f'''
+import json, sys, time
+from tool import {func_name}
+start = time.time()
+try:
+    result = {func_name}(*{func_args!r}, **{func_kwargs!r})
+    print("__RESULT__")
+    print(json.dumps({{"passed": True, "output": str(result), "execution_time_ms": int((time.time()-start)*1000)}}))
+except Exception as e:
+    print("__RESULT__")
+    print(json.dumps({{"passed": False, "error": str(e), "execution_time_ms": 0}}))
+'''
+                (tmp / "run_tests.py").write_text(main_script, encoding="utf-8")
+            else:
+                (tmp / "run_tests.py").write_text(_RUNNER_SCRIPT, encoding="utf-8")
 
             timeout = self._config.sandbox.timeout_seconds
             docker = self._get_docker()

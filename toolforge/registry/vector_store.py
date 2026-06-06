@@ -61,3 +61,7 @@ class VectorStore:
 
     def count(self) -> int:
         return self._collection.count()
+
+    def close(self):
+        """Clean up ChromaDB resources."""
+        pass  # PersistentClient manages its own lifecycle, but hook exists for future use

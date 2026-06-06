@@ -27,7 +27,7 @@ class SandboxConfig(BaseSettings):
     cpu_limit: float = 1.0
     timeout_seconds: int = 30
     pids_limit: int = 50
-    base_image: str = "python:3.12-slim"
+    base_image: str = "toolforge-sandbox:latest"
 
 
 class SmithConfig(BaseSettings):

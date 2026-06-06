@@ -1,6 +1,7 @@
 """LLM 代码生成器 — 让 LLM 从零生成工具代码。"""
 from toolforge.llm.base import LLMAdapter
 from toolforge.smith.models import GeneratedTool
+from toolforge.exceptions import ToolGenerationError
 
 
 class CodeGenerator:
@@ -35,7 +36,13 @@ class CodeGenerator:
             user_prompt=user_prompt,
             output_schema=schema,
         )
-        return GeneratedTool(**result)
+        try:
+            return GeneratedTool(**result)
+        except Exception as e:
+            raise ToolGenerationError(
+                f"LLM returned invalid tool structure: {e}\n"
+                f"Raw output keys: {list(result.keys()) if isinstance(result, dict) else 'not a dict'}"
+            )
 
 
 _SYSTEM_PROMPT = """你是一个专业的 Python 工具开发者。你的任务是生成高质量、安全、可测试的 Python 工具代码。
