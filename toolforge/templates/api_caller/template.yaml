@@ -1,0 +1,14 @@
+name: api_caller
+description: "调用 HTTP API 获取或发送数据的工具模板"
+category: data_fetching
+parameters:
+  - name: url
+    type: string
+    required: true
+    description: "API 端点 URL"
+  - name: method
+    type: choice
+    options: [GET, POST, PUT, DELETE]
+    default: GET
+whitelist:
+  - requests

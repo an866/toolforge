@@ -1,0 +1,19 @@
+name: text_processor
+description: "使用正则表达式进行文本搜索、替换、分割和提取操作的工具模板"
+category: text_processing
+parameters:
+  - name: text
+    type: string
+    required: true
+    description: "待处理的文本内容"
+  - name: pattern
+    type: string
+    required: true
+    description: "正则表达式模式"
+  - name: operation
+    type: choice
+    options: [search, replace, split, extract]
+    default: search
+    description: "操作类型"
+whitelist:
+  - re

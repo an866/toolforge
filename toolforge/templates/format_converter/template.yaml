@@ -1,0 +1,17 @@
+name: format_converter
+description: "在 JSON、CSV 等数据格式之间进行相互转换的工具模板"
+category: format_conversion
+parameters:
+  - name: input_format
+    type: choice
+    options: [json, csv]
+    default: json
+    description: "输入数据格式"
+  - name: output_format
+    type: choice
+    options: [csv, json]
+    default: csv
+    description: "输出数据格式"
+whitelist:
+  - json
+  - csv

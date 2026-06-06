@@ -1,0 +1,15 @@
+name: system_command
+description: "安全地执行系统操作（列出文件、读取文件、获取环境变量、获取当前目录）的工具模板"
+category: system
+parameters:
+  - name: operation
+    type: choice
+    options: [list_files, read_file, get_env, get_cwd]
+    default: list_files
+    description: "系统操作类型"
+  - name: path
+    type: string
+    default: "."
+    description: "目标路径或文件名（用于 list_files 和 read_file）"
+whitelist:
+  - pathlib

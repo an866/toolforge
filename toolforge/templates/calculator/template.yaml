@@ -1,0 +1,14 @@
+name: calculator
+description: "执行数学运算和统计计算（求和、均值、中位数、标准差、最大最小值）的工具模板"
+category: computation
+parameters:
+  - name: operation
+    type: choice
+    options: [sum, mean, median, std, min, max]
+    default: sum
+    description: "计算操作类型"
+  - name: numbers
+    type: string
+    default: ""
+    description: "以英文逗号分隔的数字列表，如 1,2,3,4,5"
+whitelist: []

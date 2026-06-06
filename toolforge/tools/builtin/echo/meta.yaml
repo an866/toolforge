@@ -1,0 +1,8 @@
+name: echo
+version: "1.0.0"
+description: "返回输入消息，用于测试和反馈"
+category: system
+source: builtin
+status: active
+dependencies: []
+usage_example: "echo('hello world')"

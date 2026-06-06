@@ -1,0 +1,8 @@
+name: file_reader
+version: "1.0.0"
+description: "读取文本文件内容的工具"
+category: file_operations
+source: builtin
+status: active
+dependencies: []
+usage_example: "read_file('/path/to/file.txt')"

@@ -1,0 +1,19 @@
+name: data_extractor
+description: "从文本或结构化数据中提取特定模式（邮箱、电话、URL、日期等）的工具模板"
+category: data_extraction
+parameters:
+  - name: text
+    type: string
+    required: true
+    description: "要从中提取数据的源文本"
+  - name: pattern
+    type: string
+    default: ""
+    description: "自定义正则表达式模式（为空时使用内置模式）"
+  - name: extract_type
+    type: choice
+    options: [email, phone, url, date, number, custom]
+    default: email
+    description: "要提取的数据类型"
+whitelist:
+  - re

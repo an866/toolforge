@@ -1,0 +1,14 @@
+name: data_transformer
+description: "对列表、字典等数据结构进行过滤、映射、排序、分组等变换操作的工具模板"
+category: data_transformation
+parameters:
+  - name: data_format
+    type: string
+    default: list
+    description: "输入数据的主要结构类型"
+  - name: operation
+    type: choice
+    options: [filter, map, sort, group, flatten]
+    default: filter
+    description: "变换操作类型"
+whitelist: []

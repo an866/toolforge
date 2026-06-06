@@ -1,0 +1,17 @@
+name: file_parser
+description: "解析 JSON、CSV 或 XML 文件内容的工具模板"
+category: document_processing
+parameters:
+  - name: filepath
+    type: string
+    required: true
+    description: "要解析的文件路径"
+  - name: format
+    type: choice
+    options: [json, csv, xml]
+    default: json
+    description: "文件格式"
+whitelist:
+  - json
+  - csv
+  - xml.etree.ElementTree
