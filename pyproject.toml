@@ -24,6 +24,9 @@ dev = [
 [project.scripts]
 toolforge = "toolforge.cli:main"
 
+[tool.setuptools.packages.find]
+include = ["toolforge*"]
+
 [build-system]
 requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"

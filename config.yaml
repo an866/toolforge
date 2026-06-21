@@ -11,7 +11,7 @@ sandbox:
   cpu_limit: 1
   timeout_seconds: 30
   pids_limit: 50
-  base_image: "python:3.12-slim"
+  base_image: "toolforge-sandbox:latest"
 
 smith:
   template_match_threshold: 0.7

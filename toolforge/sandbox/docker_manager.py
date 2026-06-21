@@ -69,12 +69,14 @@ except Exception as e:
                     volumes={str(tmp): {"bind": "/code", "mode": "ro"}},
                     working_dir="/code",
                     detach=True,
-                    auto_remove=True,
                     **self._get_run_kwargs(),
                 )
 
                 loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(None, container.wait, timeout)
+                result = await asyncio.wait_for(
+                    loop.run_in_executor(None, container.wait),
+                    timeout=timeout,
+                )
 
                 logs = container.logs(stdout=True, stderr=True).decode("utf-8", errors="replace")
 

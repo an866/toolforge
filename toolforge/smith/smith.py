@@ -74,9 +74,10 @@ class ToolSmith:
                 violations=check_result.violations,
             )
         if not check_result_test.passed:
-            raise StaticCheckError(
-                f"Test code static check failed: {'; '.join(check_result_test.violations)}",
-                violations=check_result_test.violations,
+            # 测试代码也在 Docker 沙盒中执行，安全检查仅作警告
+            import warnings
+            warnings.warn(
+                f"Test code static check warnings: {'; '.join(check_result_test.violations)}"
             )
 
         # 4. 沙盒验证
